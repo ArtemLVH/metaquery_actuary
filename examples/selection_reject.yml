@@ -1,0 +1,5 @@
+selected_field_ids:
+  - model_id
+  - customer_age
+
+feat: add invalid multisource selection example
