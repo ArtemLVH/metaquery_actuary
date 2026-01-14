@@ -1,22 +1,32 @@
 fields:
   - field_id: model_id
+    label: Model ID
     datatable_id: MODELS
     sql_expr: model_id
 
   - field_id: run_date
+    label: Run Date
     datatable_id: MODELS
     sql_expr: run_date
 
   - field_id: pd
+    label: Probability of Default
     datatable_id: MODELS
     sql_expr: pd
 
   - field_id: segment
+    label: Customer Segment
     datatable_id: MODELS
     sql_expr: segment
 
   - field_id: customer_age
+    label: Customer Age
     datatable_id: CUSTOMERS
     sql_expr: age
 
-feat: add field metadata example
+  - field_id: customer_name
+    label: Customer Name
+    datatable_id: CUSTOMERS
+    sql_expr: full_name
+```
+feat: add labels to field metadata for better readability
