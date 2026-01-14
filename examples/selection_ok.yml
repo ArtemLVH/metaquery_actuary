@@ -1,0 +1,7 @@
+selected_field_ids:
+  - model_id
+  - run_date
+  - pd
+  - segment
+
+feat: add valid field selection example
