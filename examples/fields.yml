@@ -1,0 +1,22 @@
+fields:
+  - field_id: model_id
+    datatable_id: MODELS
+    sql_expr: model_id
+
+  - field_id: run_date
+    datatable_id: MODELS
+    sql_expr: run_date
+
+  - field_id: pd
+    datatable_id: MODELS
+    sql_expr: pd
+
+  - field_id: segment
+    datatable_id: MODELS
+    sql_expr: segment
+
+  - field_id: customer_age
+    datatable_id: CUSTOMERS
+    sql_expr: age
+
+feat: add field metadata example
