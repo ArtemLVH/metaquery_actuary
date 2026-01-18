@@ -1,0 +1,22 @@
+MetaQuery V1 Validation Report
+==============================
+Decision: ALLOW
+Status: OK
+Source: MODELS
+Fields: 4 selected
+
+Controls:
+  ✓ non_empty_selection
+  ✓ all_fields_exist
+  ✓ no_duplicates
+  ✓ single_source
+  ✓ valid_source_name
+
+Generated SQL:
+--------------
+SELECT
+    model_id,
+    run_date,
+    pd,
+    segment
+FROM MODELS;

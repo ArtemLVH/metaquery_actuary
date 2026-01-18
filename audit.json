@@ -1,0 +1,37 @@
+{
+  "metaquery_version": "0.1.0",
+  "schema_version": 1,
+  "timestamp": "2026-01-18T09:35:28Z",
+  "decision": "BLOCK",
+  "status": "ERROR",
+  "version": "V1",
+  "source": null,
+  "fields_selected": [
+    "model_id",
+    "customer_age"
+  ],
+  "controls": {
+    "non_empty_selection": "PASS",
+    "all_fields_exist": "PASS",
+    "no_duplicates": "PASS",
+    "single_source": "FAIL"
+  },
+  "warnings": [],
+  "error": {
+    "code": "MULTI_SOURCE_NOT_ALLOWED",
+    "sources_found": [
+      "CUSTOMERS",
+      "MODELS"
+    ],
+    "fields_by_source": {
+      "MODELS": [
+        "model_id"
+      ],
+      "CUSTOMERS": [
+        "customer_age"
+      ]
+    },
+    "message": "Fields span multiple sources. V1 restriction: single-source queries only.",
+    "recommendation": "Create a pre-validated view (V2) or define explicit joins (V3)."
+  }
+}

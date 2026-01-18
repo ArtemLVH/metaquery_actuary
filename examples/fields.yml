@@ -28,5 +28,3 @@ fields:
     label: Customer Name
     datatable_id: CUSTOMERS
     sql_expr: full_name
-```
-feat: add labels to field metadata for better readability
