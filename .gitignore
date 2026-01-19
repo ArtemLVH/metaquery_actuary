@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# MetaQuery generated outputs (regenerated on each run)
+query.sql
+audit.json
+explain.txt
