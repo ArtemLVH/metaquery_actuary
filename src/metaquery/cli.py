@@ -27,10 +27,12 @@ def _write_json(path: Path, obj: object) -> None:
 def build(
     selection: Path = typer.Argument(..., help="Path to selection.yml"),
     fields: Path = typer.Option(..., "--fields", help="Path to fields.yml"),
+    execute: bool = typer.Option(False, "--execute", help="Execute the validated SQL on a SQLite database"),
+    db: Path = typer.Option(None, "--db", help="Path to the SQLite database (required with --execute)"),
 ) -> None:
     """
     Build a governed SQL query (V1) from YAML inputs.
-    Outputs: query.sql, audit.json, explain.txt
+    Outputs: query.sql, audit.json, explain.txt (+ extract.csv, manifest.json avec --execute)
     """
     try:
         fields_by_id = load_fields(fields)
@@ -46,10 +48,8 @@ def build(
     _write_json(audit_path, audit.__dict__)
 
     if audit.decision != "ALLOW":
-        # Print readable error
         code = (audit.error or {}).get("code", "VALIDATION_ERROR")
         console.print(Panel(f"ERROR: {code}\nDecision: BLOCK", title="VALIDATION", style="red"))
-        # More details
         if audit.error:
             console.print(json.dumps(audit.error, indent=2, ensure_ascii=False))
         raise typer.Exit(code=1)
@@ -57,6 +57,30 @@ def build(
     # Build SQL
     sql = build_sql_v1(audit.source or "", deduped, fields_by_id)
     _write_text(Path("query.sql"), sql)
+
+    # --- V1.1 : execution optionnelle (SQLite) ---
+    if execute:
+        if db is None:
+            console.print(Panel("ERROR: --db est requis avec --execute", title="MetaQuery", style="red"))
+            raise typer.Exit(code=3)
+        from .executor import execute_sql, write_extract, build_manifest
+        from .quality import run_quality
+        try:
+            df = execute_sql(db, sql)
+        except Exception as e:
+            console.print(Panel(f"ERROR: EXECUTION_FAILED\n{e}", title="MetaQuery", style="red"))
+            raise typer.Exit(code=3)
+        output_sha, n_rows = write_extract(df, "extract.csv")
+        verdict, checks = run_quality(df)
+        build_manifest(fields_path=fields, sql=sql, source=audit.source or "",
+                       executed=True, output_file="extract.csv",
+                       output_sha256=output_sha, row_count=n_rows,
+                       quality_verdict=verdict, quality_checks=checks)
+        style = {"PASS": "green", "WARN": "yellow", "BLOCK": "red"}[verdict]
+        console.print(Panel(f"EXECUTED: {n_rows} lignes -> extract.csv\nQualite: {verdict}\nManifeste: manifest.json",
+                            title="MetaQuery V1.1", style=style))
+        if verdict == "BLOCK":
+            raise typer.Exit(code=4)
 
     # Explain
     explain = []
@@ -86,3 +110,7 @@ def build(
 
     console.print(Panel("OK: query.sql + audit.json + explain.txt generated", title="MetaQuery", style="green"))
     raise typer.Exit(code=0)
+
+
+if __name__ == "__main__":
+    app()
