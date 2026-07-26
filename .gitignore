@@ -210,3 +210,6 @@ __marimo__/
 query.sql
 audit.json
 explain.txt
+extract.csv
+manifest.json
+*.db
