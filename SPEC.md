@@ -1,4 +1,4 @@
-# MetaQuery V1 Specification
+# MetaQuery Specification (V1 + V1.1)
 
 ## Inputs
 
@@ -312,6 +312,7 @@ FROM MODELS;
 - `0` — Success (validation passed, SQL generated)
 - `1` — Validation error (rule violation, query blocked)
 - `2` — System error (file not found, YAML parsing failed)
+- `3`, `4` — introduced in V1.1, see the V1.1 section below
 
 ### Timestamps
 - All timestamps in ISO 8601 UTC format
@@ -324,6 +325,74 @@ FROM MODELS;
 - Report line numbers for syntax errors
 
 ---
+
+## V1.1 — Execution & Quality Gate
+
+V1 stops at query generation. V1.1 adds optional execution on SQLite, a sealed
+extract, and a post-execution quality verdict.
+
+### Command
+
+python -m metaquery.cli <selection.yml> --fields <fields.yml> [--execute --db <database.db>]
+
+| Option | Type | Required | Description |
+|---|---|---|---|
+| `selection` | positional | yes | Path to selection.yml |
+| `--fields` | path | yes | Path to fields.yml |
+| `--execute` | flag | no | Execute the validated SQL on SQLite (default: off) |
+| `--db` | path | with `--execute` | Path to the SQLite database |
+
+### Pipeline
+
+1. Load YAML (fields + selection) — failure exits 2
+2. Validate against V1 rules — `audit.json` is always written; BLOCK exits 1, nothing is executed
+3. Build SQL, write `query.sql`
+4. *(`--execute` only)* Run the SQL on SQLite
+5. Write `extract.csv`, seal it with SHA-256
+6. Run the quality gate: verdict PASS / WARN / BLOCK plus per-check results
+7. Write `manifest.json`
+8. Write `explain.txt`, exit 0
+
+### Outputs
+
+| File | Written when |
+|---|---|
+| `audit.json` | always, including on validation BLOCK |
+| `query.sql` | validation returned ALLOW |
+| `extract.csv` | `--execute`, after successful execution — sealed with SHA-256 |
+| `manifest.json` | `--execute` |
+| `explain.txt` | end of a full run that reaches exit 0 |
+
+`manifest.json` keys: `producteur`, `horodatage`, `statut_requete`, `source`,
+`requete`, `dictionnaire`, `extraction{fichier, lignes, sha256}`,
+`qualite{verdict, controles}`.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Validation BLOCK — nothing executed |
+| 2 | YAML load error |
+| 3 | `--db` missing with `--execute`, or SQL execution failure |
+| 4 | Quality gate returned BLOCK |
+
+### Quality gate semantics
+
+The quality gate runs **after** execution, on the extracted data. It qualifies an
+extract that already exists; it does not prevent its production.
+
+- Validation BLOCK (exit 1) is a pre-execution gate: no query runs, no extract is written.
+- Quality BLOCK (exit 4) is a post-execution verdict: `extract.csv` and `manifest.json`
+  have already been written and sealed. The manifest carries the BLOCK verdict, so the
+  extract remains traceable as unfit for downstream use — but a consumer must read the
+  verdict, not merely check that the file exists.
+
+### Known limitation
+
+On exit 4, `explain.txt` is not written, because execution precedes the explain block.
+A run ending in quality BLOCK leaves `audit.json`, `query.sql`, `extract.csv` and
+`manifest.json`, but no explain report.
 
 ## Future Versions (V2/V3)
 
@@ -351,14 +420,3 @@ FROM MODELS;
 7. If all pass → generate SQL + audit.json + explain.txt
 8. If any fail → error message + audit.json with BLOCK decision
 ```
-
----
-
-**End of Specification**
-```
-
----
-
-## **Commit message**
-```
-docs: add complete V1 technical specification
