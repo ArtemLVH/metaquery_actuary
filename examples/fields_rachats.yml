@@ -1,0 +1,9 @@
+fields:
+  - {field_id: age,         label: Age assure,           datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: age}
+  - {field_id: anciennete,  label: Anciennete contrat,   datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: anciennete}
+  - {field_id: encours,     label: Encours,              datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: encours}
+  - {field_id: tmg,         label: Taux minimum garanti, datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: tmg}
+  - {field_id: ecart_taux,  label: Ecart taux marche,    datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: ecart_taux}
+  - {field_id: csp_code,    label: Code CSP,             datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: csp_code}
+  - {field_id: region_code, label: Code region,          datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: region_code}
+  - {field_id: rachat,      label: Indicateur rachat,    datatable_id: PORTEFEUILLE_EPARGNE, sql_expr: rachat}
