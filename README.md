@@ -130,7 +130,7 @@ See [SPEC.md](SPEC.md) for detailed validation logic.
 
 ---
 
-## Outputs (planned)
+## Outputs (implemented)
 
 For each valid selection:
 - `query.sql` — Generated SQL
@@ -151,11 +151,11 @@ For each valid selection:
 
 ## Current Status
 
-**V1:**
-- Complete specification ([SPEC.md](SPEC.md))
+**V1 implemented + V1.1 execution — 5 passing tests**
+- Complete specification incl. V1.1 ([SPEC.md](SPEC.md))
 - Example YAML files ([examples/](examples/))
 - Project structure & tooling config
-- Python implementation (starts in 2 days)
+- Python implementation: validation, execution, quality gate (src/metaquery)
 
 **V2/V3:** Design phase
 
@@ -174,8 +174,3 @@ This project treats AI tools as **accelerators**, not decision-makers.
 ## License
 
 MIT
-```
-
-**Commit message :**
-```
-docs: add complete project documentation
