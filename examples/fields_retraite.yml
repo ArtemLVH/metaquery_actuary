@@ -1,0 +1,8 @@
+﻿fields:
+  - {field_id: id_salarie, label: Identifiant salarie, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: id_salarie}
+  - {field_id: age, label: Age, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: age}
+  - {field_id: anciennete, label: Anciennete, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: anciennete}
+  - {field_id: categorie, label: Categorie, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: categorie}
+  - {field_id: salaire, label: Salaire annuel, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: salaire}
+  - {field_id: taux_cotis, label: Taux de cotisation, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: taux_cotis}
+  - {field_id: encours, label: Encours constitue, datatable_id: PORTEFEUILLE_RETRAITE, sql_expr: encours}
