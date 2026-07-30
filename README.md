@@ -121,8 +121,10 @@ See [SPEC.md](SPEC.md) for detailed validation logic.
 - Goal: eliminate implicit joins and row explosion risk
 
 ### V2 — Pre-validated views 
-- Multi-source allowed only via curated SQL views
-- Join logic is centralized and validated upstream
+- Multi-source fields are allowed only through one common curated SQL view
+- `views.yml` records the view status, owner, validation date, and covered source tables
+- Execution verifies that the SQLite object is a real `VIEW`
+- The manifest seals both the extract and the stored SQL view definition with SHA-256
 
 ### V3 — Explicit join mapping 
 - Joins defined explicitly with keys and cardinality rules
@@ -136,6 +138,52 @@ For each valid selection:
 - `query.sql` — Generated SQL
 - `audit.json` — Machine-readable validation report
 - `explain.txt` — Human-readable summary
+- `extract.csv` — Executed and sealed extraction (with `--execute`)
+- `manifest.json` — Source, dictionary, quality verdict, and SHA-256 hashes
+
+---
+
+## V2 retirement demo
+
+V2 keeps the join outside the generated query. MetaQuery selects governed fields
+from `VW_PORTEFEUILLE_RETRAITE`; the curated view owns the join between
+`SALARIES` and `CONTRATS_RETRAITE`.
+
+```powershell
+python tools/build_db_v2.py portefeuille_v2.db
+
+python -m metaquery.cli examples/selection_v2_retraite.yml `
+  --fields examples/fields_v2_retraite.yml `
+  --version V2 `
+  --views examples/views_v2.yml `
+  --execute `
+  --db portefeuille_v2.db
+```
+
+Expected result:
+
+```text
+MetaQuery V2
+EXECUTED: 3 lignes -> extract.csv
+Qualite: PASS
+```
+
+Generated SQL:
+
+```sql
+SELECT
+    id_salarie,
+    age,
+    categorie,
+    salaire,
+    produit,
+    encours,
+    age_liquidation
+FROM VW_PORTEFEUILLE_RETRAITE;
+```
+
+There is deliberately no `JOIN` in `query.sql`: V2 users may consume an approved
+view, but they may not invent join logic. Explicit joins remain a V3 concern.
 
 ---
 
@@ -151,13 +199,15 @@ For each valid selection:
 
 ## Current Status
 
-**V1 implemented + V1.1 execution — 5 passing tests**
+**V2 implemented — 14 passing tests**
 - Complete specification incl. V1.1 ([SPEC.md](SPEC.md))
 - Example YAML files ([examples/](examples/))
 - Project structure & tooling config
 - Python implementation: validation, execution, quality gate (src/metaquery)
+- V2 catalogue of pre-validated views and retirement multi-source demo
+- Backward compatibility: the five V1 tests still pass
 
-**V2/V3:** Design phase
+**V3:** Design phase
 
 ---
 

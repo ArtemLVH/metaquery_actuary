@@ -1,7 +1,9 @@
-# -*- coding: utf-8 -*-
 """Charge un CSV dans une base SQLite (table PORTEFEUILLE_EPARGNE)."""
-import sys, sqlite3
+import sqlite3
+import sys
+
 import pandas as pd
+
 csv = sys.argv[1] if len(sys.argv) > 1 else "data_rachats.csv"
 db  = sys.argv[2] if len(sys.argv) > 2 else "portefeuille.db"
 df = pd.read_csv(csv)

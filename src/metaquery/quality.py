@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """V1.1 — porte de qualité sur l'extraction : PASS / WARN / BLOCK."""
 import pandas as pd
 

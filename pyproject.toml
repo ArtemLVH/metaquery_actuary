@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metaquery-actuary"
-version = "0.1.0"
+version = "0.2.0"
 description = "Field-level SQL governance for model validation & auditability"
 requires-python = ">=3.11"
 dependencies = [
   "pyyaml>=6.0",
   "typer>=0.9.0",
   "rich>=13.0.0",
+  "pandas>=2.0.0",
 ]
 
 [project.optional-dependencies]

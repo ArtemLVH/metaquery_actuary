@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field as dc_field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from dataclasses import field as dc_field
+from datetime import UTC, datetime
 from typing import Any
 
-from .loader import Field
-
+from .loader import Field, View
 
 SOURCE_RE = re.compile(r"^[A-Z0-9_]+$")
 FIELD_ID_RE = re.compile(r"^[A-Za-z0-9_]+$")
@@ -16,7 +16,7 @@ FIELD_ID_RE = re.compile(r"^[A-Za-z0-9_]+$")
 class ValidationResult:
     metaquery_version: str = "0.1.0"
     schema_version: int = 1
-    timestamp: str = dc_field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    timestamp: str = dc_field(default_factory=lambda: datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))
     decision: str = "BLOCK"  # ALLOW or BLOCK
     status: str = "ERROR"  # OK or ERROR
     version: str = "V1"
@@ -142,6 +142,141 @@ def validate_v1(
     # If we got here => ALLOW
     audit.decision = "ALLOW"
     audit.status = "OK"
+    audit.fields_selected = list(deduped)
+    return deduped, _finalize(audit)
+
+
+def validate_v2(
+    fields_by_id: dict[str, Field],
+    selected_field_ids: list[str],
+    views_by_id: dict[str, View],
+    *,
+    metaquery_version: str = "0.2.0",
+) -> tuple[list[str], ValidationResult]:
+    """
+    Validate a V2 selection.
+
+    Fields may originate from several physical tables only through one common
+    curated view whose catalogue status is VALIDATED.
+    """
+    audit = ValidationResult(metaquery_version=metaquery_version, version="V2")
+    audit.fields_selected = list(selected_field_ids)
+
+    if not selected_field_ids:
+        audit.controls["non_empty_selection"] = "FAIL"
+        audit.error = {
+            "code": "EMPTY_SELECTION",
+            "message": "No fields selected in selection.yml. At least one field is required.",
+        }
+        return selected_field_ids, _finalize(audit)
+    audit.controls["non_empty_selection"] = "PASS"
+
+    invalid_ids = [fid for fid in selected_field_ids if not FIELD_ID_RE.match(fid)]
+    if invalid_ids:
+        audit.controls["all_fields_exist"] = "FAIL"
+        audit.error = {
+            "code": "INVALID_FIELD_ID",
+            "invalid_field_ids": invalid_ids,
+            "message": "field_id must be alphanumeric + underscore only.",
+        }
+        return selected_field_ids, _finalize(audit)
+
+    unknown = [fid for fid in selected_field_ids if fid not in fields_by_id]
+    if unknown:
+        audit.controls["all_fields_exist"] = "FAIL"
+        audit.error = {
+            "code": "FIELD_NOT_FOUND",
+            "unknown_field_ids": unknown,
+            "available_fields": sorted(fields_by_id),
+            "message": f"field_id(s) not defined in fields.yml: {', '.join(unknown)}",
+        }
+        return selected_field_ids, _finalize(audit)
+    audit.controls["all_fields_exist"] = "PASS"
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    duplicates: dict[str, int] = {}
+    for fid in selected_field_ids:
+        if fid in seen:
+            duplicates[fid] = duplicates.get(fid, 1) + 1
+            continue
+        seen.add(fid)
+        deduped.append(fid)
+    audit.controls["no_duplicates"] = "PASS"
+    for fid, count in duplicates.items():
+        audit.warnings.append(
+            {
+                "code": "DUPLICATE_FIELDS",
+                "field_id": fid,
+                "count": count,
+                "message": f"field_id '{fid}' appears {count} times. Auto-deduplicated to single occurrence.",
+            }
+        )
+
+    fields_without_view = [fid for fid in deduped if fields_by_id[fid].view_id is None]
+    view_ids = {fields_by_id[fid].view_id for fid in deduped if fields_by_id[fid].view_id}
+    if fields_without_view or len(view_ids) != 1:
+        audit.controls["common_view"] = "FAIL"
+        audit.error = {
+            "code": "COMMON_VIEW_REQUIRED",
+            "view_ids_found": sorted(view_ids),
+            "fields_without_view": fields_without_view,
+            "message": "V2 requires every selected field to reference the same curated view_id.",
+        }
+        return deduped, _finalize(audit)
+    audit.controls["common_view"] = "PASS"
+
+    view_id = next(iter(view_ids))
+    if view_id not in views_by_id:
+        audit.controls["view_declared"] = "FAIL"
+        audit.error = {
+            "code": "VIEW_NOT_FOUND",
+            "view_id": view_id,
+            "available_views": sorted(views_by_id),
+            "message": "The selected view is not declared in views.yml.",
+        }
+        return deduped, _finalize(audit)
+    audit.controls["view_declared"] = "PASS"
+
+    view = views_by_id[view_id]
+    if view.status != "VALIDATED":
+        audit.controls["view_validated"] = "FAIL"
+        audit.error = {
+            "code": "VIEW_NOT_VALIDATED",
+            "view_id": view_id,
+            "status": view.status,
+            "message": "Only views with status VALIDATED may be used in V2.",
+        }
+        return deduped, _finalize(audit)
+    audit.controls["view_validated"] = "PASS"
+
+    selected_sources = {fields_by_id[fid].datatable_id for fid in deduped}
+    undeclared_sources = sorted(selected_sources - set(view.source_tables))
+    if undeclared_sources:
+        audit.controls["sources_covered_by_view"] = "FAIL"
+        audit.error = {
+            "code": "SOURCE_NOT_IN_VIEW",
+            "view_id": view_id,
+            "undeclared_sources": undeclared_sources,
+            "declared_sources": list(view.source_tables),
+            "message": "A selected field comes from a table not covered by the curated view.",
+        }
+        return deduped, _finalize(audit)
+    audit.controls["sources_covered_by_view"] = "PASS"
+
+    if not SOURCE_RE.match(view_id):
+        audit.controls["valid_source_name"] = "FAIL"
+        audit.error = {
+            "code": "INVALID_SOURCE_NAME",
+            "source": view_id,
+            "message": "view_id must match pattern ^[A-Z0-9_]+$",
+        }
+        return deduped, _finalize(audit)
+    audit.controls["valid_source_name"] = "PASS"
+
+    audit.decision = "ALLOW"
+    audit.status = "OK"
+    audit.source = view_id
     audit.fields_selected = list(deduped)
     return deduped, _finalize(audit)
 

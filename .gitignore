@@ -209,7 +209,11 @@ __marimo__/
 # MetaQuery generated outputs (regenerated on each run)
 query.sql
 audit.json
-explain.txt
-extract.csv
-manifest.json
-*.db
+explain.txt.venv/
+*.py[cod]
+/*.db
+/extract.csv
+/manifest.json
+/query.sql
+/audit.json
+/explain.txt
