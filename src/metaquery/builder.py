@@ -15,3 +15,8 @@ def build_sql_v1(source: str, selected_field_ids: list[str], fields_by_id: dict[
         lines.append(f"    {c}{comma}")
     lines.append(f"FROM {source};")
     return "\n".join(lines) + "\n"
+
+
+def build_sql_v2(view_id: str, selected_field_ids: list[str], fields_by_id: dict[str, Field]) -> str:
+    """V2 SQL: select governed columns from one pre-validated SQL view."""
+    return build_sql_v1(view_id, selected_field_ids, fields_by_id)

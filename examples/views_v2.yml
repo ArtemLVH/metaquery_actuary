@@ -1,0 +1,8 @@
+views:
+  - view_id: VW_PORTEFEUILLE_RETRAITE
+    status: VALIDATED
+    source_tables:
+      - SALARIES
+      - CONTRATS_RETRAITE
+    owner: validation_modeles
+    validated_at: 2026-07-30

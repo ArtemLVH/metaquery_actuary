@@ -1,4 +1,4 @@
-# MetaQuery Specification (V1 + V1.1)
+# MetaQuery Specification (V1 + V1.1 + V2)
 
 ## Inputs
 
@@ -394,12 +394,80 @@ On exit 4, `explain.txt` is not written, because execution precedes the explain 
 A run ending in quality BLOCK leaves `audit.json`, `query.sql`, `extract.csv` and
 `manifest.json`, but no explain report.
 
-## Future Versions (V2/V3)
+## V2 — Pre-validated views
 
-### V2 — Pre-validated views
-- Multi-source allowed via explicit view definitions
-- View metadata includes join logic and validation status
-- Additional field: `view_id` in fields.yml
+V2 permits multi-source selections without allowing users to write joins.
+Every selected field must reference one common `view_id`, and that view must be
+declared with status `VALIDATED` in `views.yml`.
+
+### Additional field metadata
+
+```yaml
+fields:
+  - field_id: age
+    datatable_id: SALARIES
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: age
+
+  - field_id: encours
+    datatable_id: CONTRATS_RETRAITE
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: encours
+```
+
+`datatable_id` preserves the physical origin of each field. `view_id` names the
+curated projection through which the field may be selected in V2.
+
+### `views.yml`
+
+```yaml
+views:
+  - view_id: VW_PORTEFEUILLE_RETRAITE
+    status: VALIDATED
+    source_tables: [SALARIES, CONTRATS_RETRAITE]
+    owner: validation_modeles
+    validated_at: 2026-07-30
+```
+
+### V2 controls
+
+1. The selection is non-empty.
+2. Every field exists and duplicate field IDs are removed with a warning.
+3. Every selected field references the same `view_id`.
+4. The view exists in `views.yml`.
+5. Its status is exactly `VALIDATED`.
+6. Every selected field's `datatable_id` is covered by `source_tables`.
+7. `view_id` matches `^[A-Z0-9_]+$`.
+8. With `--execute`, the database object must exist as a real SQLite `VIEW`.
+
+The generated query remains a simple projection:
+
+```sql
+SELECT age, encours
+FROM VW_PORTEFEUILLE_RETRAITE;
+```
+
+V2 never generates a `JOIN`. The manifest records the SHA-256 of the stored SQL
+view definition as well as the SHA-256 of `extract.csv`.
+
+### V2 errors
+
+| Code | Meaning |
+|---|---|
+| `COMMON_VIEW_REQUIRED` | Selected fields do not share one view |
+| `VIEW_NOT_FOUND` | `view_id` is absent from `views.yml` |
+| `VIEW_NOT_VALIDATED` | The catalogue status is not `VALIDATED` |
+| `SOURCE_NOT_IN_VIEW` | A field's source table is outside the view perimeter |
+| `VIEW_NOT_FOUND_IN_DATABASE` | Execution target is not a real SQLite view |
+
+### Command
+
+```text
+python -m metaquery.cli <selection.yml> --fields <fields.yml> \
+  --version V2 --views <views.yml> [--execute --db <database.db>]
+```
+
+## Future Version
 
 ### V3 — Explicit join mapping
 - User provides join definitions with keys

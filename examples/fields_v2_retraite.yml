@@ -1,0 +1,42 @@
+fields:
+  - field_id: id_salarie
+    label: Identifiant salarie
+    datatable_id: SALARIES
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: id_salarie
+
+  - field_id: age
+    label: Age
+    datatable_id: SALARIES
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: age
+
+  - field_id: categorie
+    label: Categorie
+    datatable_id: SALARIES
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: categorie
+
+  - field_id: salaire
+    label: Salaire annuel
+    datatable_id: SALARIES
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: salaire
+
+  - field_id: produit
+    label: Produit retraite
+    datatable_id: CONTRATS_RETRAITE
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: produit
+
+  - field_id: encours
+    label: Encours constitue
+    datatable_id: CONTRATS_RETRAITE
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: encours
+
+  - field_id: age_liquidation
+    label: Age de liquidation
+    datatable_id: CONTRATS_RETRAITE
+    view_id: VW_PORTEFEUILLE_RETRAITE
+    sql_expr: age_liquidation

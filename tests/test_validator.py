@@ -14,13 +14,13 @@ def _fields():
 
 
 def test_empty_selection_blocks():
-    deduped, audit = validate_v1(_fields(), [])
+    _, audit = validate_v1(_fields(), [])
     assert audit.decision == "BLOCK"
     assert audit.error["code"] == "EMPTY_SELECTION"
 
 
 def test_unknown_field_blocks():
-    deduped, audit = validate_v1(_fields(), ["unknown_field", "model_id"])
+    _, audit = validate_v1(_fields(), ["unknown_field", "model_id"])
     assert audit.decision == "BLOCK"
     assert audit.error["code"] == "FIELD_NOT_FOUND"
     assert "unknown_field" in audit.error["unknown_field_ids"]
@@ -34,14 +34,14 @@ def test_duplicates_are_deduped_with_warning():
 
 
 def test_multi_source_blocks():
-    deduped, audit = validate_v1(_fields(), ["model_id", "customer_age"])
+    _, audit = validate_v1(_fields(), ["model_id", "customer_age"])
     assert audit.decision == "BLOCK"
     assert audit.error["code"] == "MULTI_SOURCE_NOT_ALLOWED"
     assert set(audit.error["sources_found"]) == {"MODELS", "CUSTOMERS"}
 
 
 def test_single_source_allows():
-    deduped, audit = validate_v1(_fields(), ["model_id", "pd"])
+    _, audit = validate_v1(_fields(), ["model_id", "pd"])
     assert audit.decision == "ALLOW"
     assert audit.source == "MODELS"
     assert audit.status == "OK"

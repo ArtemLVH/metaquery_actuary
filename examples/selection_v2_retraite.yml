@@ -1,0 +1,8 @@
+selected_field_ids:
+  - id_salarie
+  - age
+  - categorie
+  - salaire
+  - produit
+  - encours
+  - age_liquidation
